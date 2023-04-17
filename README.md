@@ -87,9 +87,9 @@
 
 Поскольку преобразования, получаемые алгоритмом UMAP недетерминированны, то результаты работы модели могут отличаться от запуска к запуску. Для демонстрации работы модели ниже представлены результаты, полученные после нескольких запусков:
 
-![Alt text](https://github.com/jiGApache/BERT_VS_LDA/raw/main/images/1.png)
+![Alt text](https://github.com/jiGApache/LDA_VS_BERT/raw/main/images/1.png)
 
-![Alt text](https://github.com/jiGApache/BERT_VS_LDA/raw/main/images/2.png)
+![Alt text](https://github.com/jiGApache/LDA_VS_BERT/raw/main/images/2.png)
 
 Анализ полученных диаграмм позволяет сказать, что:
 - были получены все основные топики, содержащиеся в анализируемых статьях (Few-Shot, Time Series, Siamese Networks, Medicine, Convolutional Networks)
