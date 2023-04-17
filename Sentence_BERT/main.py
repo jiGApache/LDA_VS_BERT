@@ -8,8 +8,14 @@ from Data.prepare_texts import remove_stop_words
 from Data.prepare_texts import stemming
 from bertopic import BERTopic
 
+from gensim import corpora
+from gensim.test.utils import common_corpus, common_dictionary
+from gensim.models.coherencemodel import CoherenceModel
+
+import re
+
 if __name__ == '__main__':
-    
+
     if not os.path.exists('Data/filtered') or len(os.listdir('Data/filtered')) == 0:
         save_to_txt()
 
@@ -21,14 +27,43 @@ if __name__ == '__main__':
             text = remove_stop_words(text)
             text = stemming(text)
 
+
+            text = re.sub(r',', '', text)
+
+            
             sentences = [sentence for sentence in text.split('.') if len(sentence.split(' ')) > 2]
-            docs.extend(sentences)
+            final_sentences = []
+            while len(sentences) > 0:
+                final_sentences.append(' '.join(sentences[:1]))
+                del sentences[:1]
+            docs.extend(final_sentences)
+
     
+    # Finding topics
+    topic_model = BERTopic(language='english')
+    topics = topic_model.fit_transform(docs)
 
-    topic_model = BERTopic(language='english', calculate_probabilities=True, verbose=True)
-    topics, probs = topic_model.fit_transform(docs)
-
-    freq = topic_model.get_topic_info()
-    print(freq.head(10))
+    freq = topic_model.get_topic_info().head(10)
+    # print(freq)
 
     topic_model.visualize_barchart(top_n_topics=10).show()
+
+
+
+    #Calculating coherence score
+    topics = freq['Name'].to_list()[1:]
+    topics = [topic.split('_')[1:] for topic in topics]
+
+    texts = [[word for word in doc.split()] for doc in docs]
+    dictionary = corpora.Dictionary(texts)
+    corpus = [dictionary.doc2bow(text) for text in texts]
+    
+    cm = CoherenceModel(
+        texts=texts,
+        topics=topics,
+        corpus=corpus,
+        coherence='c_v',
+        dictionary=dictionary
+    )
+    
+    print(f'Coherence score: {cm.get_coherence()}')

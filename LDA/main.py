@@ -10,6 +10,7 @@ from Data.prepare_texts import stemming
 import re
 import gensim
 from gensim import corpora
+from gensim.models.coherencemodel import CoherenceModel
 
 from pprint import pprint
 
@@ -23,26 +24,46 @@ if __name__ == '__main__':
     for doc_name in doc_list:
         with open(f'Data/filtered/{doc_name}', 'r', encoding='utf_8') as doc:
             text = doc.read()
-            text = stemming(text)
             text = remove_stop_words(text)
-            
+            text = stemming(text)
+
             text = re.sub(r',', '', text)
-            text = re.sub(r'\.', ' ', text)
 
-            docs.append(text)
+            sentences = [sentence for sentence in text.split('.') if len(sentence.split(' ')) > 2]
+            docs.extend(sentences)
 
+
+    # Finding topics
     texts = [[word for word in doc.split()] for doc in docs]
-
     dictionary = corpora.Dictionary(texts)
-    
     corpus = [dictionary.doc2bow(text) for text in texts]
 
     lda_model = gensim.models.ldamodel.LdaModel(
         corpus=corpus,
         id2word=dictionary,
-        num_topics=7,
+        num_topics=10,
         passes=10,
         random_state=42
     )
 
-    pprint(lda_model.print_topics(num_words=10))
+    pprint(lda_model.print_topics(num_words=4))
+
+
+    
+    #Calculating coherence score
+    topics = []
+    for tpl in lda_model.print_topics(num_words=5):
+        topic = []
+        for word_prob in tpl[1].split(' + '):
+            topic.append(word_prob.split('*')[1][1:-1])
+        topics.append(topic)
+
+    cm = CoherenceModel(
+        texts=texts,
+        topics=topics,
+        corpus=corpus,
+        coherence='c_v',
+        dictionary=dictionary
+    )
+    
+    print(f'Coherence score: {cm.get_coherence()}')
