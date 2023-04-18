@@ -3,13 +3,20 @@ import re
 import os
 
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('stopwords')
 
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 
+from gensim import corpora
+
+
 def save_to_txt():
+    
     files = os.listdir('Data/clean')
     os.makedirs('Data/filtered', exist_ok=True)
 
@@ -98,3 +105,37 @@ def stemming(text):
         new_sentences.append(' '.join(stemmed_word))
 
     return '.'.join(new_sentences)
+
+def get_docs():
+
+    if not os.path.exists('Data/filtered') or len(os.listdir('Data/filtered')) == 0:
+        save_to_txt()
+
+    docs = []
+    doc_list = os.listdir('Data/filtered')
+    for doc_name in doc_list:
+        with open(f'Data/filtered/{doc_name}', 'r', encoding='utf_8') as doc:
+            text = doc.read()
+            text = remove_stop_words(text)
+            text = stemming(text)
+
+            text = re.sub(r',', '', text)
+
+            sentences = [sentence for sentence in text.split('.') if len(sentence.split(' ')) > 2]
+            final_sentences = []
+            while len(sentences) > 0:
+                final_sentences.append(' '.join(sentences[:1]))
+                del sentences[:1]
+            docs.extend(final_sentences)
+
+    return docs
+
+def retrieve_data():
+
+    docs = get_docs()
+
+    texts = [[word for word in doc.split()] for doc in docs]
+    dictionary = corpora.Dictionary(texts)
+    corpus = [dictionary.doc2bow(text) for text in texts]
+
+    return texts, dictionary, corpus

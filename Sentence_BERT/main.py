@@ -3,67 +3,52 @@ import os
 dir_path = os.path.dirname(__file__)[:os.path.dirname(__file__).rfind('\\')]
 sys.path.append(dir_path)
 
-from Data.prepare_texts import save_to_txt
-from Data.prepare_texts import remove_stop_words
-from Data.prepare_texts import stemming
+from Data.prepare_texts import retrieve_data
+from utils.training import get_best_bertopic
+from Data.prepare_texts import get_docs
+from utils.training import pretty_bertopic_topics
+from utils.training import coherence_score
+from utils.training import jaccard_distance
+from utils.training import RANDOM_SEED
+# from utils.visualize_paretto import plot_paretto
 from bertopic import BERTopic
-
-from gensim import corpora
-from gensim.test.utils import common_corpus, common_dictionary
-from gensim.models.coherencemodel import CoherenceModel
-
-import re
+from umap import UMAP
 
 if __name__ == '__main__':
 
-    if not os.path.exists('Data/filtered') or len(os.listdir('Data/filtered')) == 0:
-        save_to_txt()
+    texts, dictionary, _ = retrieve_data()
+    bertopic_best_trials = get_best_bertopic()
 
-    docs = []
-    doc_list = os.listdir('Data/filtered')
-    for doc_name in doc_list:
-        with open(f'Data/filtered/{doc_name}', 'r', encoding='utf_8') as doc:
-            text = doc.read()
-            text = remove_stop_words(text)
-            text = stemming(text)
+    umap_model = UMAP(n_neighbors=15,
+                        n_components=5,
+                        min_dist=0.0,
+                        metric='cosine',
+                        random_state=RANDOM_SEED)
 
 
-            text = re.sub(r',', '', text)
+    for best_trial in bertopic_best_trials:
 
-            
-            sentences = [sentence for sentence in text.split('.') if len(sentence.split(' ')) > 2]
-            final_sentences = []
-            while len(sentences) > 0:
-                final_sentences.append(' '.join(sentences[:1]))
-                del sentences[:1]
-            docs.extend(final_sentences)
+        best_topic_model = BERTopic(
+            language='english',
+            min_topic_size=best_trial.params['min_topic_size'],
+            umap_model=umap_model
+        )
+        
+        docs = get_docs()
+        best_topic_model.fit_transform(docs)
 
-    
-    # Finding topics
-    topic_model = BERTopic(language='english')
-    topics = topic_model.fit_transform(docs)
+        print(f'For params {best_trial.params}')
+        freq = best_topic_model.get_topic_info().head(best_trial.params['num_topics'])
+        print(freq)
 
-    freq = topic_model.get_topic_info().head(10)
-    # print(freq)
+        # best_topic_model.visualize_barchart(
+        #     top_n_topics=bertopic_best_trials.params['num_topics'],
+        #     n_words=bertopic_best_trials.params['num_words']
+        # ).show()
 
-    topic_model.visualize_barchart(top_n_topics=10).show()
+        topics = pretty_bertopic_topics(best_topic_model, best_trial.params['num_topics'], best_trial.params['num_words'])
+        print(f'Coherence score: {coherence_score(texts, topics, dictionary)}')
+        print(f'Jaccard distance: f{jaccard_distance(topics)}')
+        print()
 
-
-
-    #Calculating coherence score
-    topics = freq['Name'].to_list()[1:]
-    topics = [topic.split('_')[1:] for topic in topics]
-
-    texts = [[word for word in doc.split()] for doc in docs]
-    dictionary = corpora.Dictionary(texts)
-    corpus = [dictionary.doc2bow(text) for text in texts]
-    
-    cm = CoherenceModel(
-        texts=texts,
-        topics=topics,
-        corpus=corpus,
-        coherence='c_v',
-        dictionary=dictionary
-    )
-    
-    print(f'Coherence score: {cm.get_coherence()}')
+    # plot_paretto(model_to_show=['bertopic'])

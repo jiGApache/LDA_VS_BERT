@@ -3,67 +3,41 @@ import os
 dir_path = os.path.dirname(__file__)[:os.path.dirname(__file__).rfind('\\')]
 sys.path.append(dir_path)
 
-from Data.prepare_texts import save_to_txt
-from Data.prepare_texts import remove_stop_words
-from Data.prepare_texts import stemming
-
-import re
+from Data.prepare_texts import retrieve_data
+from utils.training import get_best_lda
+from utils.training import pretty_lda_topics
+from utils.training import coherence_score
+from utils.training import jaccard_distance
+from utils.training import RANDOM_SEED
+# from utils.visualize_paretto import plot_paretto
 import gensim
-from gensim import corpora
-from gensim.models.coherencemodel import CoherenceModel
-
 from pprint import pprint
 
+
+
 if __name__ == '__main__':
-    
-    if not os.path.exists('Data/filtered') or len(os.listdir('Data/filtered')) == 0:
-        save_to_txt()
 
-    docs = []
-    doc_list = os.listdir('Data/filtered')
-    for doc_name in doc_list:
-        with open(f'Data/filtered/{doc_name}', 'r', encoding='utf_8') as doc:
-            text = doc.read()
-            text = remove_stop_words(text)
-            text = stemming(text)
+    texts, dictionary, corpus = retrieve_data()
+    lda_best_trials = get_best_lda()
 
-            text = re.sub(r',', '', text)
+    for best_trial in lda_best_trials:
 
-            sentences = [sentence for sentence in text.split('.') if len(sentence.split(' ')) > 2]
-            docs.extend(sentences)
+        best_lda_model = gensim.models.ldamodel.LdaModel(
+            corpus=corpus,
+            id2word=dictionary,
+            num_topics=best_trial.params['num_topics'],
+            passes=best_trial.params['passes'],
+            random_state=RANDOM_SEED
+        )
 
+        print(f'For params {best_trial.params}:')
 
-    # Finding topics
-    texts = [[word for word in doc.split()] for doc in docs]
-    dictionary = corpora.Dictionary(texts)
-    corpus = [dictionary.doc2bow(text) for text in texts]
+        print('Topics:')
+        pprint(best_lda_model.print_topics(num_words=best_trial.params['num_words']))
 
-    lda_model = gensim.models.ldamodel.LdaModel(
-        corpus=corpus,
-        id2word=dictionary,
-        num_topics=10,
-        passes=10,
-        random_state=42
-    )
+        topics = pretty_lda_topics(best_lda_model, best_trial.params['num_words'])
+        print(f'Coherence score: {coherence_score(texts, topics, dictionary)}')
+        print(f'Jaccard distance: f{jaccard_distance(topics)}')
+        print()
 
-    pprint(lda_model.print_topics(num_words=4))
-
-
-    
-    #Calculating coherence score
-    topics = []
-    for tpl in lda_model.print_topics(num_words=5):
-        topic = []
-        for word_prob in tpl[1].split(' + '):
-            topic.append(word_prob.split('*')[1][1:-1])
-        topics.append(topic)
-
-    cm = CoherenceModel(
-        texts=texts,
-        topics=topics,
-        corpus=corpus,
-        coherence='c_v',
-        dictionary=dictionary
-    )
-    
-    print(f'Coherence score: {cm.get_coherence()}')
+    # plot_paretto(model_to_show=['lda'])
