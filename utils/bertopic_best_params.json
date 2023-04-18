@@ -1,1 +1,1 @@
-[{"metrics": [0.8253968253968255, 0.7074423851684594], "params": {"min_topic_size": 8, "num_topics": 7, "num_words": 7}}]
+[{"metrics": [0.8571428571428571, 0.6494877739519195], "params": {"min_topic_size": 9, "num_topics": 8, "num_words": 5}}, {"metrics": [0.8571428571428571, 0.6494877739519195], "params": {"min_topic_size": 9, "num_topics": 8, "num_words": 4}}]

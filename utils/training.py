@@ -106,7 +106,7 @@ def bertopic_objective(trial):
 def get_best_bertopic():
 
     study = optuna.create_study(directions=['maximize', 'maximize'])
-    study.optimize(bertopic_objective, n_trials=2)
+    study.optimize(bertopic_objective, n_trials=20)
 
     best_trials = study.best_trials
     total_data = []

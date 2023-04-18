@@ -16,6 +16,7 @@ def plot_paretto(model_to_show=['lda', 'bertopic']):
                 lda_coherence.append(trial['metrics'][1])
         
         plt.plot(lda_jaccard, lda_coherence, '-^', label='lda')
+        plt.axis
         plt.legend()
 
 
@@ -32,6 +33,9 @@ def plot_paretto(model_to_show=['lda', 'bertopic']):
         
         plt.plot(bert_jaccard, bert_coherence, '-^', label='bertopic')
         plt.legend()
+
+    plt.xlabel("Jaccard Distance")
+    plt.ylabel("Coherence score")
 
     plt.show()
 

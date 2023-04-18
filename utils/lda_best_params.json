@@ -1,1 +1,1 @@
-[{"metrics": [0.7630769230769232, 0.5980220768257775], "params": {"num_words": 7, "num_topics": 5, "passes": 90}}, {"metrics": [0.8533333333333334, 0.5771238308880616], "params": {"num_words": 5, "num_topics": 10, "passes": 88}}]
+[{"metrics": [0.9027777777777778, 0.6761214132852379], "params": {"num_words": 4, "num_topics": 12, "passes": 131}}, {"metrics": [0.9027777777777778, 0.6761214132852379], "params": {"num_words": 4, "num_topics": 12, "passes": 138}}]
